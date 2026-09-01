@@ -1,1 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Refresh Opportunity Scoring for Search Content</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      max-width: 920px;
+      margin: 40px auto;
+      padding: 0 20px;
+      color: #1f2937;
+      background: #ffffff;
+    }
+    h1, h2 {
+      color: #111827;
+      line-height: 1.2;
+    }
+    h1 {
+      font-size: 2.2rem;
+      margin-bottom: 0.25rem;
+    }
+    .subtitle {
+      color: #4b5563;
+      font-size: 1.05rem;
+      margin-bottom: 2rem;
+    }
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      margin: 20px 0;
+    }
+    .metric {
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      padding: 14px;
+      background: #f9fafb;
+    }
+    .metric strong {
+      display: block;
+      font-size: 1.4rem;
+      color: #111827;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0 28px;
+      font-size: 0.95rem;
+    }
+    th, td {
+      border: 1px solid #d1d5db;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background: #f3f4f6;
+    }
+    code {
+      background: #f3f4f6;
+      padding: 2px 5px;
+      border-radius: 4px;
+    }
+    .note {
+      border-left: 4px solid #2563eb;
+      padding-left: 14px;
+      color: #374151;
+      background: #f8fafc;
+    }
+  </style>
+</head>
+<body>
+  <h1>Refresh Opportunity Scoring for Search Content</h1>
+  <p class="subtitle">A FlyRank Search Intelligence capstone by Taha Shan</p>
 
+  <h2>Abstract</h2>
+  <p>
+    This project asks which existing content items should be reviewed first for refresh or CTR improvement.
+    I framed the problem as a ranking task for a content or SEO review queue.
+    Using the FlyRank ML Internship warehouse dataset, I built March 2026 features and used April 2026 impression decline as a proxy outcome.
+    A logistic regression model outperformed the hand-written baseline on the same client-grouped test split, improving Precision@50 from 0.10 to 0.30.
+    The result is a public-safe ranked recommendation workflow for deciding which content items deserve human review first.
+  </p>
+
+  <h2>Introduction / Problem Statement</h2>
+  <p>
+    Content teams have limited time and cannot manually inspect every page every month.
+    The decision this work supports is: which content items should be reviewed first?
+    The recommended action is not automatic publishing. The action is to inspect the content item,
+    check search intent and performance signals, then decide whether to refresh, improve title or snippet,
+    merge, prune, protect, or monitor.
+  </p>
+
+  <h2>Data</h2>
+  <p>
+    This project uses the FlyRank ML Internship warehouse dataset. I used the daily content performance
+    fact table and the content dimension table. March 2026 is the feature window, and April 2026 is the
+    outcome window for the proxy label.
+  </p>
+
+  <div class="metric-grid">
+    <div class="metric"><strong>32,564</strong>rows</div>
+    <div class="metric"><strong>30</strong>clients</div>
+    <div class="metric"><strong>32,564</strong>content items</div>
+    <div class="metric"><strong>1,719</strong>proxy-positive rows</div>
+    <div class="metric"><strong>5.3%</strong>proxy-positive rate</div>
+  </div>
+
+  <p>
+    I excluded client names, domains, raw URLs, raw search queries, credentials, and raw exports from
+    the public paper. I also excluded June 2026 from label development because the assignment warns
+    that the final month should be treated as sealed.
+  </p>
+
+  <h2>Methodology</h2>
+  <p>
+    I framed the lane as a ranking/scoring task. The proxy target is whether a content item loses at
+    least 20% of March impressions in April. The features are known at the March decision moment:
+    word count, search volume, competition, days since last content touch, March impressions, March clicks,
+    March CTR, March average position, March sessions, March engagement rate, and March pageviews.
+  </p>
+  <p>
+    The baseline is a hand-written score based on visibility, low CTR, weaker position, and staleness.
+    The learned models were logistic regression, decision tree, and random forest. All models were compared
+    on the same client-grouped split so content from the same client did not cross between train and test.
+    The main metric is Precision@50 because a review queue is only useful if the top recommendations are strong.
+  </p>
+
+  <h2>Results</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Model</th>
+        <th>Precision@50</th>
+        <th>Average Precision</th>
+        <th>ROC AUC</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Logistic regression</td>
+        <td>0.30</td>
+        <td>0.158944</td>
+        <td>0.832789</td>
+      </tr>
+      <tr>
+        <td>Decision tree</td>
+        <td>0.20</td>
+        <td>0.071757</td>
+        <td>0.733969</td>
+      </tr>
+      <tr>
+        <td>Random forest</td>
+        <td>0.16</td>
+        <td>0.121233</td>
+        <td>0.828792</td>
+      </tr>
+      <tr>
+        <td>Baseline rule</td>
+        <td>0.10</td>
+        <td>0.050792</td>
+        <td>0.693079</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>
+    The best model was logistic regression. On the same client-grouped test split, it found three times
+    as many proxy-positive review candidates in the top 50 as the baseline rule.
+  </p>
+
+  <h2>Limitations & Honest Framing</h2>
+  <p class="note">
+    This work is decision support, not proof of causality. It does not prove that refreshing a page will
+    cause rankings or traffic to improve.
+  </p>
+  <p>
+    The proxy label uses a future drop in impressions, but it does not prove why the drop happened.
+    Search performance can change because of seasonality, SERP features, competitor changes, tracking coverage,
+    content intent, or Google changes outside this dataset. The recommendations should be treated as a review queue
+    for humans, not an automatic action system.
+  </p>
+
+  <h2>Ranked Recommendations</h2>
+  <p>
+    The ranked output gives each content item a model score, an action label, and a reason code.
+    For <code>MODEL_HIGH_RISK_LOW_CTR</code>, the review should focus on title, snippet, search intent match,
+    and SERP layout. For <code>MODEL_HIGH_RISK_REFRESH</code>, the review should focus on freshness,
+    completeness, ranking position, engagement, and business value.
+  </p>
+  <p>
+    The action playbook is: inspect the top-ranked items, verify that the search intent is worth serving,
+    decide whether the right action is refresh, CTR improvement, merge, prune, protect, or monitor,
+    and avoid making changes automatically from the score alone.
+  </p>
+
+  <h2>Reproducibility</h2>
+  <p>
+    Repository:
+    <a href="https://github.com/TahaShan16/flyrank-ml-internship">
+      https://github.com/TahaShan16/flyrank-ml-internship
+    </a>
+  </p>
+  <p>
+    Main notebook:
+    <a href="https://github.com/TahaShan16/flyrank-ml-internship/blob/main/work/notebooks/capstone.ipynb">
+      work/notebooks/capstone.ipynb
+    </a>
+  </p>
+
+  <h2>Acknowledgments & Data Credit</h2>
+  <p>
+    Built on the FlyRank ML Internship dataset. Data and program by
+    <a href="https://flyrank.ai">FlyRank</a>.
+  </p>
+</body>
+</html>
